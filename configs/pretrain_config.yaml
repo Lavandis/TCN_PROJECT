@@ -1,0 +1,83 @@
+experiment:
+  name: pendulum_tcn_pretrain
+  seed: 42
+
+artifacts:
+  output_root: artifacts/runs
+  alias_dir: checkpoints
+
+device: auto
+
+data:
+  synthetic_csv: data/synthetic/pendulum_sequences.csv
+  has_sample_id_column: true
+  scale_factor: 1.0
+  fps: 90
+  input_seconds: 180
+  pred_seconds: 60
+  split:
+    train: 0.7
+    val: 0.2
+    test: 0.1
+    seed: 42
+    persist_path: artifacts/splits/synthetic_pretrain_split.json
+
+simulation:
+  output_csv: data/synthetic/pendulum_sequences.csv
+  write_sample_id_column: true
+  num_samples: 1000
+  duration_seconds: 240
+  noise_std: 0.000787
+  damping_uncertainty_ratio: 0.5
+  physical:
+    gravity: 9.8
+    length: 0.6
+    mass: 0.033
+    linear_damping_base: 0.0001
+    quadratic_damping_base: 0.0001
+  initial_state:
+    theta: -0.2617993877991494
+    omega: 0.0
+
+model:
+  input_channels: 1
+  kernel_size: 5
+  num_layers: 9
+  channel_width: 32
+  dropout: 0.01
+
+optuna:
+  study_name: pendulum_tcn_pretrain
+  n_trials: 20
+  timeout_seconds:
+  train_epochs_per_trial: 5
+  pruner_warmup_steps: 2
+  search_space:
+    kernel_size: [5, 7, 9]
+    num_layers: [6, 7, 8, 9, 10]
+    channel_width: [16, 24, 32]
+    dropout:
+      low: 0.0
+      high: 0.2
+    learning_rate:
+      low: 0.0001
+      high: 0.005
+      log: true
+    batch_size: [4, 8, 16]
+
+train:
+  batch_size: 8
+  learning_rate: 0.001
+  weight_decay: 0.0
+  epochs: 30
+  early_stopping_patience: 8
+  num_workers: 0
+  pin_memory: true
+  amp: true
+
+plot:
+  sample_index:
+  random_seed: 42
+  histogram_bins: 20
+  zoom_history_seconds: 2
+  zoom_future_seconds: 4

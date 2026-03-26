@@ -1,0 +1,55 @@
+experiment:
+  name: pendulum_tcn_finetune
+  seed: 42
+
+artifacts:
+  output_root: artifacts/runs
+  alias_dir: checkpoints
+
+device: auto
+
+data:
+  real_csv: data/real/pendulum_real_sequences.csv
+  has_sample_id_column: true
+  scale_factor: 1.0
+  fps: 90
+  input_seconds: 180
+  pred_seconds: 60
+  split:
+    train: 0.6
+    val: 0.2
+    test: 0.2
+    seed: 42
+    persist_path: artifacts/splits/real_finetune_split.json
+
+model:
+  input_channels: 1
+  kernel_size: 5
+  num_layers: 9
+  channel_width: 32
+  dropout: 0.01
+
+initialization:
+  pretrained_checkpoint: checkpoints/pretrained_model_latest.pt
+  allow_random_init: false
+
+evaluation:
+  baseline_checkpoint: checkpoints/pretrained_model_latest.pt
+  finetuned_checkpoint: checkpoints/finetuned_model_latest.pt
+
+train:
+  batch_size: 4
+  learning_rate: 0.00001
+  weight_decay: 0.0
+  epochs: 20
+  early_stopping_patience: 6
+  num_workers: 0
+  pin_memory: true
+  amp: true
+
+plot:
+  sample_index:
+  random_seed: 42
+  histogram_bins: 20
+  zoom_history_seconds: 2
+  zoom_future_seconds: 4

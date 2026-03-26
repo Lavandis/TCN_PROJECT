@@ -1,0 +1,6 @@
+matplotlib>=3.8
+numpy>=1.26
+optuna>=4.2
+pandas>=2.2
+PyYAML>=6.0
+torch>=2.5
