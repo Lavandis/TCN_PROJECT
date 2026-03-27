@@ -17,3 +17,5 @@ data/real/*.json
 *.pt
 *.png
 *.pdf
+
+/PLAN.md
