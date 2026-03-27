@@ -42,9 +42,9 @@ simulation:
 model:
   input_channels: 1
   kernel_size: 5
-  num_layers: 9
-  channel_width: 32
-  dropout: 0.01
+  num_layers: 8
+  channel_width: 24
+  dropout: 0.129057
 
 optuna:
   study_name: pendulum_tcn_pretrain
@@ -66,11 +66,11 @@ optuna:
     batch_size: [4, 8, 16]
 
 train:
-  batch_size: 8
-  learning_rate: 0.001
+  batch_size: 4
+  learning_rate: 0.002670
   weight_decay: 0.0
-  epochs: 30
-  early_stopping_patience: 8
+  epochs: 80
+  early_stopping_patience: 15
   num_workers: 0
   pin_memory: true
   amp: true
