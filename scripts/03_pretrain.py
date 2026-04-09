@@ -112,6 +112,7 @@ def main() -> None:
         run_dir=run_dir,
         early_stopping_patience=int(train_config["early_stopping_patience"]),
         save_checkpoints=True,
+        show_progress=True,
     )
 
     best_checkpoint = fit_result["best_checkpoint"]
@@ -119,7 +120,13 @@ def main() -> None:
         raise RuntimeError("Pretraining did not produce a best checkpoint.")
     load_model_checkpoint(model, best_checkpoint, device)
 
-    evaluation = trainer.evaluate_loader(test_loader, output_scale=scale_factor, collect_inputs=True)
+    evaluation = trainer.evaluate_loader(
+        test_loader,
+        output_scale=scale_factor,
+        collect_inputs=True,
+        show_progress=True,
+        progress_desc="Test",
+    )
     save_json(evaluation["metrics"], run_dir / "test_metrics.json")
 
     test_sample_ids = select_sample_ids(sample_ids, indices["test"])

@@ -4,3 +4,4 @@ optuna>=4.2
 pandas>=2.2
 PyYAML>=6.0
 torch>=2.5
+tqdm>=4.66

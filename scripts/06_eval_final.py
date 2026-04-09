@@ -81,7 +81,13 @@ def main() -> None:
         amp=bool(config["train"]["amp"]),
     )
     load_model_checkpoint(model, checkpoint_path, device)
-    evaluation = trainer.evaluate_loader(test_loader, output_scale=scale_factor, collect_inputs=True)
+    evaluation = trainer.evaluate_loader(
+        test_loader,
+        output_scale=scale_factor,
+        collect_inputs=True,
+        show_progress=True,
+        progress_desc="Final Eval",
+    )
 
     save_json(evaluation["metrics"], run_dir / "final_metrics.json")
     test_sample_ids = select_sample_ids(sample_ids, indices["test"])

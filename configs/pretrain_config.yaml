@@ -41,24 +41,29 @@ simulation:
 
 model:
   input_channels: 1
-  kernel_size: 5
-  num_layers: 9
+  kernel_size: 9
+  num_layers: 6
   channel_width: 32
-  dropout: 0.0073
+  dropout: 0.002155
 
 optuna:
   study_name: pendulum_tcn_pretrain
   n_trials: 20
   timeout_seconds:
-  train_epochs_per_trial: 5
-  pruner_warmup_steps: 2
+  objective_metric: val_mae
+  train_epochs_per_trial: 10
+  trial_early_stopping_patience: 4
+  pruner_warmup_steps: 4
+  refine_top_k: 5
+  refine_epochs: 30
+  refine_early_stopping_patience: 8
   search_space:
     kernel_size: [5, 7, 9]
     num_layers: [6, 7, 8, 9, 10]
     channel_width: [16, 24, 32]
     dropout:
       low: 0.0
-      high: 0.2
+      high: 0.12
     learning_rate:
       low: 0.0001
       high: 0.005
@@ -67,7 +72,7 @@ optuna:
 
 train:
   batch_size: 4
-  learning_rate: 0.001
+  learning_rate: 0.000914
   weight_decay: 0.0
   epochs: 50
   early_stopping_patience: 50

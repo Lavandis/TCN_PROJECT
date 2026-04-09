@@ -11,6 +11,7 @@ import torch.amp
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from tqdm.auto import tqdm
 
 from .utils.metrics import compute_evaluation_summary
 from .utils.runtime import save_json
@@ -45,6 +46,7 @@ class Trainer:
         early_stopping_patience: int | None = None,
         save_checkpoints: bool = True,
         epoch_callback: EpochCallback | None = None,
+        show_progress: bool = False,
     ) -> dict[str, Any]:
         history: list[dict[str, Any]] = []
         best_record: dict[str, Any] | None = None
@@ -54,9 +56,23 @@ class Trainer:
         best_checkpoint_path = run_dir / "best_model.pt" if run_dir is not None else None
         last_checkpoint_path = run_dir / "last_model.pt" if run_dir is not None else None
 
-        for epoch in range(1, epochs + 1):
-            train_loss = self._run_training_epoch(train_loader)
-            val_result = self.evaluate_loader(val_loader, output_scale=output_scale, collect_inputs=False)
+        epoch_iterator = range(1, epochs + 1)
+        if show_progress:
+            epoch_iterator = tqdm(epoch_iterator, desc="Epochs", dynamic_ncols=True)
+
+        for epoch in epoch_iterator:
+            train_loss = self._run_training_epoch(
+                train_loader,
+                show_progress=show_progress,
+                progress_desc=f"Train {epoch}/{epochs}",
+            )
+            val_result = self.evaluate_loader(
+                val_loader,
+                output_scale=output_scale,
+                collect_inputs=False,
+                show_progress=show_progress,
+                progress_desc=f"Val {epoch}/{epochs}",
+            )
 
             record = {
                 "epoch": epoch,
@@ -67,6 +83,13 @@ class Trainer:
                 "val_rmse": val_result["metrics"]["overall_rmse"],
             }
             history.append(record)
+
+            if show_progress and hasattr(epoch_iterator, "set_postfix"):
+                epoch_iterator.set_postfix(
+                    train_loss=f"{record['train_loss']:.6f}",
+                    val_loss=f"{record['val_loss']:.6f}",
+                    val_mae=f"{record['val_mae']:.6f}",
+                )
 
             if record["val_loss"] < best_val_loss:
                 best_val_loss = record["val_loss"]
@@ -116,6 +139,8 @@ class Trainer:
         loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],
         output_scale: float,
         collect_inputs: bool,
+        show_progress: bool = False,
+        progress_desc: str = "Eval",
     ) -> dict[str, Any]:
         self.model.eval()
         losses: list[float] = []
@@ -123,14 +148,21 @@ class Trainer:
         collected_targets: list[np.ndarray] = []
         collected_predictions: list[np.ndarray] = []
 
+        loader_iterator = loader
+        if show_progress:
+            loader_iterator = tqdm(loader, desc=progress_desc, leave=False, dynamic_ncols=True)
+
         with torch.no_grad():
-            for inputs, targets in loader:
+            for inputs, targets in loader_iterator:
                 inputs = inputs.to(self.device, non_blocking=True)
                 targets = targets.to(self.device, non_blocking=True)
 
                 predictions = self.model(inputs)
                 loss = self.criterion(predictions, targets)
                 losses.append(float(loss.item()))
+
+                if show_progress and hasattr(loader_iterator, "set_postfix"):
+                    loader_iterator.set_postfix(loss=f"{loss.item():.6f}")
 
                 predictions_np = predictions.detach().cpu().numpy() * output_scale
                 targets_np = targets.detach().cpu().numpy() * output_scale
@@ -156,11 +188,17 @@ class Trainer:
     def _run_training_epoch(
         self,
         loader: DataLoader[tuple[torch.Tensor, torch.Tensor]],
+        show_progress: bool = False,
+        progress_desc: str = "Train",
     ) -> float:
         self.model.train()
         batch_losses: list[float] = []
 
-        for inputs, targets in loader:
+        loader_iterator = loader
+        if show_progress:
+            loader_iterator = tqdm(loader, desc=progress_desc, leave=False, dynamic_ncols=True)
+
+        for inputs, targets in loader_iterator:
             inputs = inputs.to(self.device, non_blocking=True)
             targets = targets.to(self.device, non_blocking=True)
 
@@ -173,6 +211,9 @@ class Trainer:
             self.scaler.step(self.optimizer)
             self.scaler.update()
             batch_losses.append(float(loss.item()))
+
+            if show_progress and hasattr(loader_iterator, "set_postfix"):
+                loader_iterator.set_postfix(loss=f"{loss.item():.6f}")
 
         return float(np.mean(batch_losses))
 

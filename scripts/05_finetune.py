@@ -110,6 +110,7 @@ def main() -> None:
         run_dir=run_dir,
         early_stopping_patience=int(train_config["early_stopping_patience"]),
         save_checkpoints=True,
+        show_progress=True,
     )
 
     best_checkpoint = fit_result["best_checkpoint"]
